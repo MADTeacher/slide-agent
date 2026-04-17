@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "build",
+  "permission": {
+    "skill": {
+      "slidev-orchestrator": "allow",
+      "slidev-presentation": "allow"
+    }
+  }
+}
