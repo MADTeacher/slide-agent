@@ -684,6 +684,39 @@ function addProcessDiagram(slide, slideNo, steps, options = {}) {
   });
 }
 
+function getDiagramSteps(spec) {
+  if (Array.isArray(spec?.process?.steps) && spec.process.steps.length > 0) {
+    return spec.process.steps;
+  }
+
+  if (Array.isArray(spec?.diagram?.nodes) && spec.diagram.nodes.length > 0) {
+    return spec.diagram.nodes.map((node) => ({
+      title: node.title || "",
+      body: node.body || "",
+    }));
+  }
+
+  return [{ title: spec?.title || "Diagram", body: spec?.subtitle || "" }];
+}
+
+function getComparisonRows(spec) {
+  if (Array.isArray(spec?.table?.rows) && spec.table.rows.length > 0) {
+    return spec.table.rows;
+  }
+
+  if (Array.isArray(spec?.comparison?.columns) && spec.comparison.columns.length > 0) {
+    const columns = spec.comparison.columns;
+    const rowCount = Math.max(...columns.map((column) => column.items?.length || 0), 0);
+    const rows = [columns.map((column) => column.title || "")];
+    for (let index = 0; index < rowCount; index += 1) {
+      rows.push(columns.map((column) => column.items?.[index] || ""));
+    }
+    return rows;
+  }
+
+  return [[spec?.title || "Comparison", spec?.subtitle || ""]];
+}
+
 function addFanOutDiagram(slide, slideNo) {
   addNode(slide, slideNo, "Общий контекст", "Одна база для всех веток.", 640, 294, 168, 92, {
     bodySize: 13,
@@ -861,7 +894,7 @@ function buildConfiguredDiagramLayout(spec, layoutConfig) {
           strokeWidth: 1.2,
         });
         addPanelLine(slide, 0, 24, 20, layoutConfig.asset.width - 48);
-        addProcessDiagram(slide, 0, spec.process.steps, layoutConfig.processOptions);
+        addProcessDiagram(slide, 0, getDiagramSteps(spec), layoutConfig.processOptions);
       },
     };
   }
@@ -898,7 +931,7 @@ function getDiagramImageLayout(spec) {
           strokeWidth: 1.2,
         });
         addPanelLine(slide, 0, 24, 20, 572);
-        addProcessDiagram(slide, 0, spec.process.steps, {
+        addProcessDiagram(slide, 0, getDiagramSteps(spec), {
           left: 24,
           top: 52,
           nodeWidth: 170,
@@ -923,7 +956,7 @@ function getDiagramImageLayout(spec) {
           strokeWidth: 1.2,
         });
         addPanelLine(slide, 0, 28, 24, 1084);
-        addPipelineDiagramCompact(slide, 0, spec.process.steps);
+        addPipelineDiagramCompact(slide, 0, getDiagramSteps(spec));
       },
     };
   }
@@ -960,7 +993,7 @@ function getDiagramImageLayout(spec) {
               titleSize: 13,
               lastAccent: ACCENT,
             };
-      addProcessDiagram(slide, 0, spec.process.steps, options);
+      addProcessDiagram(slide, 0, getDiagramSteps(spec), options);
     },
   };
 }
@@ -981,8 +1014,25 @@ function renderNativeDiagramLayout(slide, spec) {
   layout.render(offsetSlide(slide, layout.frame.left, layout.frame.top));
 }
 
+function getCoverOverride(spec) {
+  const override = OVERRIDES[1] || {};
+  const bullets = Array.isArray(spec.bullets) ? spec.bullets.filter(Boolean) : [];
+  const summary = Array.isArray(spec.body) ? spec.body.filter(Boolean) : [];
+  return {
+    kicker: override.kicker || "Travel Health English",
+    intro: override.intro || summary[0] || "Simple English for calm, real situations away from home.",
+    cards:
+      Array.isArray(override.cards) && override.cards.length > 0
+        ? override.cards
+        : bullets.slice(0, 3).map((bullet, index) => ({
+            title: `Focus ${index + 1}`,
+            body: bullet,
+          })),
+  };
+}
+
 function renderCover(slide, spec) {
-  const override = OVERRIDES[1];
+  const override = getCoverOverride(spec);
   drawBackground(slide, 1, { heroPanel: true, orbits: true });
   addPill(slide, 1, override.kicker.toUpperCase(), 436, 76, 408, 40, { dot: true, role: "cover kicker", fontSize: 15 });
   addTextBox(slide, 1, spec.title, 330, 150, 620, 86, {
@@ -1013,6 +1063,8 @@ function renderCover(slide, spec) {
 
 function renderComparison(slide, spec) {
   const override = OVERRIDES[spec.number] || {};
+  const comparisonBullets =
+    Array.isArray(spec?.bullets) && spec.bullets.length > 0 ? spec.bullets : Array.isArray(spec?.body) ? spec.body : [];
   drawBackground(slide, spec.number);
   addTitleBlock(slide, spec.number, spec, {
     kicker: override.kicker,
@@ -1034,8 +1086,8 @@ function renderComparison(slide, spec) {
     return;
   }
 
-  addBulletPanel(slide, spec.number, spec.bullets, 74, 304, 506, 186);
-  addTableRows(slide, spec.number, spec.table.rows, 692, 170, 520);
+  addBulletPanel(slide, spec.number, comparisonBullets, 74, 304, 506, 186);
+  addTableRows(slide, spec.number, getComparisonRows(spec), 692, 170, 520);
 }
 
 function renderStats(slide, spec) {
@@ -1293,9 +1345,14 @@ function renderImage(slide, spec) {
 }
 
 function renderClosing(slide, spec) {
-  const override = OVERRIDES[20];
+  const override = OVERRIDES[20] || {};
+  const closingKicker = override.kicker || "Travel Health English";
+  const closingChips =
+    Array.isArray(override.chips) && override.chips.length > 0
+      ? override.chips
+      : (Array.isArray(spec.bullets) ? spec.bullets.filter(Boolean).slice(0, 3) : []);
   drawBackground(slide, spec.number, { heroPanel: true, orbits: true });
-  addPill(slide, spec.number, override.kicker.toUpperCase(), 502, 104, 218, 40, { dot: true, role: "closing kicker" });
+  addPill(slide, spec.number, closingKicker.toUpperCase(), 502, 104, 218, 40, { dot: true, role: "closing kicker" });
   addTextBox(slide, spec.number, spec.title, 286, 210, 708, 86, {
     fontSize: 44,
     bold: true,
@@ -1309,7 +1366,7 @@ function renderClosing(slide, spec) {
     align: "center",
     role: "closing subtitle",
   });
-  addChipsRow(slide, spec.number, override.chips, 300, 388, { accentIndex: 1, minWidth: 170, charWidth: 8, fontSize: 12 });
+  addChipsRow(slide, spec.number, closingChips, 300, 388, { accentIndex: 1, minWidth: 170, charWidth: 8, fontSize: 12 });
   addTextBox(slide, spec.number, spec.body?.[0] || "", 236, 510, 808, 42, {
     fontSize: 28,
     bold: true,

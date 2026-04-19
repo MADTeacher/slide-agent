@@ -140,12 +140,12 @@ export function resolveAssetPath(assetPath) {
     return null;
   }
 
-  if (path.isAbsolute(assetPath)) {
-    return assetPath;
-  }
-
   if (assetPath.startsWith("/")) {
     return path.join(ROOT_DIR, "public", assetPath.replace(/^\/+/, ""));
+  }
+
+  if (path.isAbsolute(assetPath)) {
+    return assetPath;
   }
 
   const relativeToRoot = path.resolve(ROOT_DIR, assetPath);

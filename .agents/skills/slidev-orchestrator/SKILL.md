@@ -20,6 +20,7 @@ The pipeline below is mandatory whenever this skill is invoked.
 - Do not write `output/<slug>.deck-spec.json` yourself. Only `slidev-assembler` may create the deck spec.
 - Do not mark the task complete after planning, research, or assembly alone. Completion requires review plus export.
 - Do not treat `slides.md` as the final deliverable. Final deliverables are the exported artifacts in `output/`.
+- Treat PNG review as a mandatory quality gate for the full pipeline. Visual QA must happen before the final export phase is considered approved.
 - Use only `bun run export:*` scripts for export. Do not call raw `slidev export` or `npx slidev export`.
 
 ## Before Starting
@@ -90,16 +91,23 @@ Do not assemble or restyle the deck yourself.
 
 Launch `slidev-reviewer` with the final `slides.md` and `output/<slug>.deck-spec.json`.
 
-- If review passes, continue to export.
+`slidev-reviewer` is responsible for both:
+
+1. Static pre-export validation of `slides.md` and the deck spec
+2. A mandatory visual PNG review-gate using freshly exported `bun run export:png` output
+
+- If review passes, continue to final export.
 - If review fails, send the issues to `slidev-stylist` for fixes.
 - Limit review-rework loops to 2 iterations.
-- After 2 failed iterations, continue to export but clearly report unresolved issues.
+- After 2 failed iterations, stop and clearly report unresolved review issues instead of exporting an unapproved deck.
 
 Do not skip review.
 
 ## Phase 5: Export
 
-Launch `slidev-exporter` to produce PDF, editable PPTX, and PNG artifacts. Legacy raster PPTX is optional fallback only.
+Launch `slidev-exporter` only after `slidev-reviewer` returns a pass verdict. `slidev-exporter` produces the final PDF, editable PPTX, and PNG artifacts for delivery. Legacy raster PPTX is optional fallback only.
+
+`slidev-exporter` is not the PNG source for the review phase. PNG review happens inside `slidev-reviewer`; the exporter runs only after approval.
 
 Do not skip export. The job is complete only when export finishes successfully or you explicitly report which phase failed.
 
