@@ -328,71 +328,74 @@ bun run dev
 
 ## Структура проекта
 
-```
+```text
 slidev_agent/
-├── slides.md                  # Сгенерированная презентация (Slidev Markdown)
-├── schemas/
-│   └── deck-spec.schema.json  # Схема для machine-readable deck spec
-├── package.json               # Зависимости и скрипты экспорта
-├── opencode.json              # Конфигурация opencode
-├── AGENTS.md                  # Краткое описание архитектуры для AI
+├── slides.md                         # Текущая презентация в формате Slidev Markdown
+├── package.json                      # Зависимости и команды `bun run ...`
+├── bun.lock                          # Lockfile Bun
+├── tsconfig.json                     # TypeScript-конфигурация для tool/script-кода
+├── opencode.json                     # Корневая конфигурация opencode
+├── AGENTS.md                         # Инструкции для AI-агентов в репозитории
+├── README.md
+├── LICENSE
 │
-├── .opencode/                 # Конфигурация opencode
-│   ├── agents/                # Агенты в формате Markdown
-│   │   ├── slidev-content-researcher.md
-│   │   ├── slidev-layout-designer.md
-│   │   ├── slidev-illustrator.md
-│   │   ├── slidev-diagrammer.md
-│   │   ├── slidev-assembler.md
-│   │   ├── slidev-stylist.md
-│   │   ├── slidev-reviewer.md
-│   │   └── slidev-exporter.md
-│   └── tools/                 # Кастомные инструменты (экспорт)
-│       └── slidev-export.ts
-│
-├── .codex/                    # Конфигурация OpenAI Codex
-│   ├── config.toml            # Настройки рантайма
-│   └── agents/                # Агенты в формате TOML
-│       └── ...                # (те же 8 worker-агентов)
-│
-├── .agents/                   # Общие навыки (skills)
-│   └── skills/
+├── .agents/
+│   └── skills/                       # Shared skills для обоих рантаймов
 │       ├── slidev-orchestrator/
-│       │   ├── SKILL.md       # Оркестрация полного пайплайна
+│       │   ├── SKILL.md
 │       │   └── agents/openai.yaml
 │       ├── slidev-editable-pptx/
-│       │   ├── SKILL.md       # Локальный editable PowerPoint export
+│       │   ├── SKILL.md
 │       │   └── agents/openai.yaml
 │       └── slidev-presentation/
-│           └── SKILL.md       # Справочник по синтаксису Slidev
+│           └── SKILL.md
 │
-├── components/                # Vue-компоненты для презентаций
-│   ├── StatCard.vue
-│   ├── Timeline.vue
+├── .opencode/                        # Конфигурация opencode runtime
+│   ├── agents/                       # 8 worker-агентов в формате Markdown
+│   └── tools/
+│       └── slidev-export.ts          # Интеграция export-команд для opencode
+│
+├── .codex/                           # Конфигурация OpenAI Codex runtime
+│   ├── config.toml
+│   └── agents/                       # Те же 8 worker-агентов в формате TOML
+│
+├── components/                       # Переиспользуемые Vue-компоненты для слайдов
 │   ├── ComparisonTable.vue
 │   ├── ImageGrid.vue
-│   └── SectionNumber.vue
+│   ├── SectionNumber.vue
+│   ├── StatCard.vue
+│   └── Timeline.vue
 │
-├── layouts/                   # Кастомные layouts
+├── layouts/                          # Кастомные Slidev layouts
+│   ├── body-diagram.vue
+│   ├── full-image.vue
 │   ├── hero-center.vue
-│   ├── stat-grid.vue
 │   ├── side-by-side.vue
-│   └── full-image.vue
+│   └── stat-grid.vue
 │
-├── styles/                    # Глобальные стили
-│   └── index.ts
+├── styles/                           # Глобальные стили и layout overrides
+│   ├── base.css
+│   ├── index.css
+│   └── layouts.css
 │
-├── public/                    # Статические файлы и SVG
-│   └── .gitkeep
+├── schemas/
+│   └── deck-spec.schema.json         # JSON Schema для `output/*.deck-spec.json`
 │
-├── output/                    # Результаты экспорта и deck specs
-│   └── .gitkeep
+├── scripts/
+│   ├── deck-spec.mjs                 # Чтение/нормализация deck spec
+│   ├── export-slidev.mjs             # Основной export pipeline Slidev
+│   ├── fix-export.mjs                # Удаление пустой первой страницы/кадра
+│   ├── validate-deck-spec.mjs        # Валидация deck spec по schema
+│   └── native-pptx/
+│       ├── build-deck-native.mjs     # Сборка editable PPTX из deck spec
+│       ├── cleanup-pptx-package.mjs  # Постобработка PPTX-пакета
+│       └── deck-configs/             # Локальные deck-конфиги и примеры
 │
-└── scripts/
-    ├── deck-spec.mjs          # Загрузка и проверка deck spec
-    ├── export-slidev.mjs
-    ├── fix-export.mjs         # Исправление пустой первой страницы
-    └── validate-deck-spec.mjs
+├── public/                           # Статические ассеты, SVG и сопутствующие файлы
+├── output/                           # Deck specs и экспортированные PDF/PPTX/PNG
+├── example/                          # Примеры готовых артефактов
+├── dist/                             # Build-артефакты локального preview/export path
+└── tmp/                              # Временные служебные файлы
 ```
 
 ---
