@@ -18,6 +18,29 @@ import path from 'path';
 import { pathToFileURL } from 'url';
 import { checkAssetGate } from './asset_gate_check.mjs';
 
+const TRACE_STARTED_AT = Date.now();
+const COMMAND = ['node', path.basename(process.argv[1] || 'export_deck_stage_png.mjs'), ...process.argv.slice(2)].join(' ');
+
+async function appendRunTrace(event) {
+  try {
+    const exportsDir = path.resolve('exports');
+    await fs.mkdir(exportsDir, { recursive: true });
+    await fs.appendFile(
+      path.join(exportsDir, 'run-trace.jsonl'),
+      `${JSON.stringify({
+        timestamp: new Date().toISOString(),
+        script: 'export_deck_stage_png.mjs',
+        command: COMMAND,
+        pid: process.pid,
+        ...event,
+      })}\n`,
+      'utf8',
+    );
+  } catch {
+    // Telemetry must never break exports.
+  }
+}
+
 function parseArgs() {
   const args = { width: 1920, height: 1080, scale: 2, wait: 300 };
   const a = process.argv.slice(2);
@@ -102,9 +125,22 @@ async function main() {
 
   await browser.close();
   console.log(`\nГотово: ${outDir}`);
+  await appendRunTrace({
+    phase: 'export_stage_png',
+    status: 'ok',
+    duration_ms: Date.now() - TRACE_STARTED_AT,
+    slide_count: actualSlides,
+    out: path.relative(process.cwd(), outDir),
+  });
 }
 
-main().catch(e => {
+main().catch(async e => {
+  await appendRunTrace({
+    phase: 'export_stage_png',
+    status: 'error',
+    duration_ms: Date.now() - TRACE_STARTED_AT,
+    error: e?.message || String(e),
+  });
   console.error(e);
   process.exit(1);
 });

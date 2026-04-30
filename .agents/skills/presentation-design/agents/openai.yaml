@@ -1,6 +1,6 @@
 interface:
   display_name: "Дизайн презентаций"
-  short_description: "Создание, проверка и экспорт HTML-first презентаций."
+  short_description: "Создание, проверка и экспорт HTML-first презентаций с fast path."
   default_prompt: "Используй $presentation-design, чтобы создать HTML-first презентацию и экспортировать запрошенные артефакты."
 
 policy:

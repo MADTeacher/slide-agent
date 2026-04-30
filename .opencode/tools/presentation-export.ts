@@ -33,7 +33,21 @@ function ensureExportsDir(deckDir: string) {
   return exportsDir
 }
 
+function appendTrace(deckDir: string, event: Record<string, unknown>) {
+  try {
+    const exportsDir = ensureExportsDir(deckDir)
+    fs.appendFileSync(path.join(exportsDir, "run-trace.jsonl"), `${JSON.stringify({
+      timestamp: new Date().toISOString(),
+      tool: "presentation-export",
+      ...event,
+    })}\n`)
+  } catch {
+    // Telemetry must never break exports.
+  }
+}
+
 async function runNode(deckDir: string, args: string[]) {
+  const startedAt = Date.now()
   const proc = Bun.spawn(["node", ...args], {
     cwd: deckDir,
     stdout: "pipe",
@@ -48,10 +62,28 @@ async function runNode(deckDir: string, args: string[]) {
 
   if (proc.exitCode !== 0) {
     const details = [stdout.trim(), stderr.trim()].filter(Boolean).join("\n")
+    appendTrace(deckDir, {
+      phase: "opencode_export_tool",
+      command: ["node", ...args].join(" "),
+      status: "error",
+      duration_ms: Date.now() - startedAt,
+      exit_code: proc.exitCode,
+      stderr_bytes: stderr.length,
+      stdout_bytes: stdout.length,
+    })
     throw new Error(`node ${args.join(" ")} failed (exit ${proc.exitCode})${details ? `:\n${details}` : ""}`)
   }
 
-  return [stdout.trim(), stderr.trim()].filter(Boolean).join("\n")
+  const durationMs = Date.now() - startedAt
+  appendTrace(deckDir, {
+    phase: "opencode_export_tool",
+    command: ["node", ...args].join(" "),
+    status: "ok",
+    duration_ms: durationMs,
+    stderr_bytes: stderr.length,
+    stdout_bytes: stdout.length,
+  })
+  return { output: [stdout.trim(), stderr.trim()].filter(Boolean).join("\n"), durationMs }
 }
 
 function newestFile(dir: string, extension: string) {
@@ -92,7 +124,7 @@ export const png = tool({
       }
 
       const fullOut = path.resolve(deckDir, out)
-      return `PNG exported to ${path.relative(context.worktree, fullOut)} (${pngCount(fullOut)} files, exports dir ${path.relative(context.worktree, exportsDir)})`
+      return `PNG exported to ${path.relative(context.worktree, fullOut)} (${pngCount(fullOut)} files, exports dir ${path.relative(context.worktree, exportsDir)}, trace ${path.relative(context.worktree, path.join(exportsDir, "run-trace.jsonl"))})`
     } catch (error) {
       return String(error)
     }
@@ -117,7 +149,8 @@ export const pdf = tool({
       }
 
       const latest = newestFile(exportsDir, ".pdf")
-      return latest ? `PDF exported to ${path.relative(context.worktree, path.join(exportsDir, latest))}` : `PDF export finished; check ${path.relative(context.worktree, path.resolve(deckDir, out))}`
+      const trace = `trace ${path.relative(context.worktree, path.join(exportsDir, "run-trace.jsonl"))}`
+      return latest ? `PDF exported to ${path.relative(context.worktree, path.join(exportsDir, latest))} (${trace})` : `PDF export finished; check ${path.relative(context.worktree, path.resolve(deckDir, out))} (${trace})`
     } catch (error) {
       return String(error)
     }
@@ -136,7 +169,8 @@ export const pptx = tool({
       await runNode(deckDir, ["scripts/export_deck_pptx.mjs", "--slides", args.slides ?? "slides", "--out", out])
 
       const latest = newestFile(exportsDir, ".pptx")
-      return latest ? `Editable PPTX exported to ${path.relative(context.worktree, path.join(exportsDir, latest))}` : `PPTX export finished; check ${path.relative(context.worktree, path.resolve(deckDir, out))}`
+      const trace = `trace ${path.relative(context.worktree, path.join(exportsDir, "run-trace.jsonl"))}`
+      return latest ? `Editable PPTX exported to ${path.relative(context.worktree, path.join(exportsDir, latest))} (${trace})` : `PPTX export finished; check ${path.relative(context.worktree, path.resolve(deckDir, out))} (${trace})`
     } catch (error) {
       return String(error)
     }

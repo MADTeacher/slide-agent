@@ -25,6 +25,29 @@ import fs from 'fs/promises';
 import path from 'path';
 import { checkAssetGate } from './asset_gate_check.mjs';
 
+const TRACE_STARTED_AT = Date.now();
+const COMMAND = ['node', path.basename(process.argv[1] || 'export_deck_pdf.mjs'), ...process.argv.slice(2)].join(' ');
+
+async function appendRunTrace(event) {
+  try {
+    const exportsDir = path.resolve('exports');
+    await fs.mkdir(exportsDir, { recursive: true });
+    await fs.appendFile(
+      path.join(exportsDir, 'run-trace.jsonl'),
+      `${JSON.stringify({
+        timestamp: new Date().toISOString(),
+        script: 'export_deck_pdf.mjs',
+        command: COMMAND,
+        pid: process.pid,
+        ...event,
+      })}\n`,
+      'utf8',
+    );
+  } catch {
+    // Telemetry must never break exports.
+  }
+}
+
 function parseArgs() {
   const args = { width: 1920, height: 1080 };
   const a = process.argv.slice(2);
@@ -103,6 +126,23 @@ async function main() {
 
   const kb = (bytes.byteLength / 1024).toFixed(0);
   console.log(`\n✓ Записан файл ${outFile}  (${kb} KB, страниц: ${files.length}, векторный PDF)`);
+  await appendRunTrace({
+    phase: 'export_pdf',
+    status: 'ok',
+    duration_ms: Date.now() - TRACE_STARTED_AT,
+    slide_count: files.length,
+    out: path.relative(process.cwd(), outFile),
+    output_bytes: bytes.byteLength,
+  });
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch(async e => {
+  await appendRunTrace({
+    phase: 'export_pdf',
+    status: 'error',
+    duration_ms: Date.now() - TRACE_STARTED_AT,
+    error: e?.message || String(e),
+  });
+  console.error(e);
+  process.exit(1);
+});

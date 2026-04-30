@@ -39,6 +39,28 @@ import { fileURLToPath } from 'url';
 import { checkAssetGate } from './asset_gate_check.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const TRACE_STARTED_AT = Date.now();
+const COMMAND = ['node', path.basename(process.argv[1] || 'export_deck_pptx.mjs'), ...process.argv.slice(2)].join(' ');
+
+async function appendRunTrace(event) {
+  try {
+    const exportsDir = path.resolve('exports');
+    await fs.mkdir(exportsDir, { recursive: true });
+    await fs.appendFile(
+      path.join(exportsDir, 'run-trace.jsonl'),
+      `${JSON.stringify({
+        timestamp: new Date().toISOString(),
+        script: 'export_deck_pptx.mjs',
+        command: COMMAND,
+        pid: process.pid,
+        ...event,
+      })}\n`,
+      'utf8',
+    );
+  } catch {
+    // Telemetry must never break exports.
+  }
+}
 
 function parseArgs() {
   const args = {};
@@ -152,11 +174,31 @@ async function main() {
   }
 
   await pres.writeFile({ fileName: outFile });
+  const stat = await fs.stat(outFile).catch(() => null);
   if (errors.length) {
     console.error(`\n⚠️ Записан частичный файл ${outFile}  (${files.length - errors.length}/${files.length} слайдов, editable PPTX)`);
   } else {
     console.log(`\n✓ Записан файл ${outFile}  (${files.length}/${files.length} слайдов, editable PPTX)`);
   }
+  await appendRunTrace({
+    phase: 'export_pptx',
+    status: errors.length ? 'partial' : 'ok',
+    duration_ms: Date.now() - TRACE_STARTED_AT,
+    slide_count: files.length,
+    converted_slide_count: files.length - errors.length,
+    out: path.relative(process.cwd(), outFile),
+    output_bytes: stat?.size,
+    error_count: errors.length,
+  });
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch(async e => {
+  await appendRunTrace({
+    phase: 'export_pptx',
+    status: 'error',
+    duration_ms: Date.now() - TRACE_STARTED_AT,
+    error: e?.message || String(e),
+  });
+  console.error(e);
+  process.exit(1);
+});
