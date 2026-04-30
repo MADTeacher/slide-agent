@@ -6,9 +6,9 @@ presentations/*/node_modules/
 out
 dist
 *.tgz
-presentations/*/exports/
-presentations/*/tmp/
+presentations/
 tmp/
+
 
 # generated
 index.ts
