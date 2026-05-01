@@ -82,20 +82,22 @@ node scripts/export_deck_stage_pdf.mjs --html deck.html --out exports/deck.pdf
 - Финальный проход проверки должен быть чистым после последнего изменения исходника.
 - Редактируемый PPTX должен следовать `references/pptx-authoring.md`.
 
-## Синхронизация двух рантаймов
+## Синхронизация трёх рантаймов
 
-Проект поддерживает две агентские системы:
+Проект поддерживает три агентские системы:
 
 - `.opencode/` — определения агентов и инструменты OpenCode;
 - `.codex/` — определения агентов и конфигурация Codex;
+- `.cursor/` — определения субагентов Cursor;
 - `.agents/skills/` — общий каталог навыка.
 
-Любое изменение рабочих ролей, общего навыка, справочников инструментов, команд экспорта или правил оркестрации должно оставаться синхронизированным в обоих рантаймах.
+Любое изменение рабочих ролей, общего навыка, справочников инструментов, команд экспорта или правил оркестрации должно оставаться синхронизированным во всех поддерживаемых рантаймах.
 
 Держите синхронно:
 
 - `.opencode/agents/presentation-*.md`
 - `.codex/agents/presentation-*.toml`
+- `.cursor/agents/presentation-*.md`
 - `.agents/skills/presentation-design/SKILL.md`
 - `.agents/skills/presentation-design/references/subagents.md`
 - `.opencode/tools/presentation-export.ts`

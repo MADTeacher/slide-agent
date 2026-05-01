@@ -113,6 +113,10 @@ Codex:
 - агенты: `.codex/agents/presentation-*.toml`
 - конфигурация: `.codex/config.toml`
 
+Cursor:
+
+- агенты: `.cursor/agents/presentation-*.md`
+
 Общий навык:
 
 - `.agents/skills/presentation-design/SKILL.md`
@@ -120,4 +124,4 @@ Codex:
 - `.agents/skills/presentation-design/scripts/`
 - `.agents/skills/presentation-design/assets/`
 
-При изменении поведения рабочих агентов одновременно обновляйте оба рантайма и справочники общего навыка.
+При изменении поведения рабочих агентов одновременно обновляйте все поддерживаемые рантаймы и справочники общего навыка.

@@ -1,6 +1,7 @@
 # dependencies
 node_modules/
 presentations/*/node_modules/
+.playwright-mcp/
 
 # output
 out
